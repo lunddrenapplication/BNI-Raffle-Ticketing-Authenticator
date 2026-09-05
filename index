@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. Auth Protocol</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cyan: #0ff;
+            --cyan-glow: rgba(0, 255, 255, 0.6);
+            --dark-bg: #050a14;
+            --grid-color: rgba(0, 255, 255, 0.05);
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark-bg);
+            color: var(--cyan);
+            font-family: 'Share Tech Mono', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+        /* Scanning line effect */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            right: 0;
+            height: 20vh;
+            background: linear-gradient(to bottom, rgba(0,255,255,0), rgba(0,255,255,0.1) 50%, rgba(0,255,255,0));
+            animation: scan 8s linear infinite;
+            pointer-events: none;
+            z-index: 10;
+        }
+        @keyframes scan {
+            0% { top: -100%; }
+            100% { top: 200%; }
+        }
+
+        .auth-container {
+            position: relative;
+            width: 450px;
+            padding: 50px 40px;
+            background: rgba(5, 10, 20, 0.8);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1), inset 0 0 20px rgba(0, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%);
+        }
+        
+        .corner {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border: 2px solid var(--cyan);
+        }
+        .corner-tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .corner-tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .corner-bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+        .corner-br { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        .header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            letter-spacing: 4px;
+            margin-bottom: 40px;
+            color: #fff;
+            text-shadow: 0 0 10px var(--cyan-glow);
+            text-transform: uppercase;
+        }
+        .header span {
+            color: var(--cyan);
+        }
+
+        .totp-display {
+            font-size: 5rem;
+            font-weight: 700;
+            letter-spacing: 15px;
+            margin: 30px 0;
+            color: #fff;
+            text-shadow: 0 0 15px var(--cyan), 0 0 30px var(--cyan-glow);
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            animation: pulse 2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan-glow); }
+            100% { text-shadow: 0 0 20px var(--cyan), 0 0 40px #00ffff; }
+        }
+
+        .progress-ring {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+        }
+        .progress-ring svg {
+            transform: rotate(-90deg);
+        }
+        .progress-ring circle {
+            fill: transparent;
+            stroke-width: 4;
+            stroke: rgba(0, 255, 255, 0.1);
+        }
+        .progress-ring .progress {
+            stroke: var(--cyan);
+            stroke-dasharray: 339.292;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear;
+            filter: drop-shadow(0 0 5px var(--cyan));
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .status {
+            font-size: 12px;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+        }
+        
+        .status.active {
+            color: var(--cyan);
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Glitch effect for expiring */
+        .expiring .totp-display {
+            color: #ff3333;
+            text-shadow: 0 0 15px #ff3333, 0 0 30px rgba(255,51,51,0.6);
+            animation: glitch 0.2s linear infinite;
+        }
+        .expiring .progress {
+            stroke: #ff3333;
+            filter: drop-shadow(0 0 5px #ff3333);
+        }
+        .expiring .corner {
+            border-color: #ff3333;
+        }
+        
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px,0) skew(0deg); }
+            4%, 60% { transform: translate(-2px,0) skew(0deg); }
+            62% { transform: translate(0,0) skew(5deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <div class="header">PROTOCOL: <span>ADMIN_AUTH</span></div>
+        
+        <div class="progress-ring">
+            <svg width="120" height="120">
+                <circle cx="60" cy="60" r="54"></circle>
+                <circle class="progress" cx="60" cy="60" r="54" id="progressCircle"></circle>
+            </svg>
+            <div class="timer-text" id="timer">--:--</div>
+        </div>
+
+        <div class="totp-display" id="totpCode">------</div>
+        
+        <div class="status active">LINK SECURED</div>
+    </div>
+
+    <script>
+        const SECRET_KEY = "LUNDDREN_BNI_RAFFLE_SUPER_SECRET_2026";
+        const TIME_STEP_MS = 300000; 
+
+        async function generateTOTP(secret, timeStep) {
+            const counter = Math.floor(Date.now() / timeStep);
+            const enc = new TextEncoder();
+            const keyData = enc.encode(secret);
+            const counterBuffer = new ArrayBuffer(8);
+            const counterView = new DataView(counterBuffer);
+            counterView.setUint32(0, Math.floor(counter / 0x100000000), false);
+            counterView.setUint32(4, counter % 0x100000000, false);
+            const cryptoKey = await window.crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+            const signature = await window.crypto.subtle.sign('HMAC', cryptoKey, counterBuffer);
+            const hash = new Uint8Array(signature);
+            const offset = hash[hash.length - 1] & 0x0f;
+            const binary = ((hash[offset] & 0x7f) << 24) | ((hash[offset + 1] & 0xff) << 16) | ((hash[offset + 2] & 0xff) << 8) | (hash[offset + 3] & 0xff);
+            let otp = (binary % 1000000).toString();
+            while (otp.length < 6) otp = '0' + otp;
+            return otp;
+        }
+
+        const circle = document.getElementById('progressCircle');
+        const circumference = 2 * Math.PI * 54;
+
+        async function updateUI() {
+            const otp = await generateTOTP(SECRET_KEY, TIME_STEP_MS);
+            document.getElementById('totpCode').innerText = otp;
+
+            const now = Date.now();
+            const remainingTime = TIME_STEP_MS - (now % TIME_STEP_MS);
+            const remainingSeconds = Math.floor(remainingTime / 1000);
+            
+            const mins = Math.floor(remainingSeconds / 60);
+            const secs = remainingSeconds % 60;
+            document.getElementById('timer').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            const percent = remainingTime / TIME_STEP_MS;
+            const offset = circumference - (percent * circumference);
+            circle.style.strokeDashoffset = offset;
+
+            const container = document.querySelector('.auth-container');
+            if (remainingSeconds <= 30) {
+                container.classList.add('expiring');
+                document.querySelector('.status').innerText = 'EXPIRING SOON';
+                document.querySelector('.status').style.color = '#ff3333';
+            } else {
+                container.classList.remove('expiring');
+                document.querySelector('.status').innerText = 'LINK SECURED';
+                document.querySelector('.status').style.color = 'var(--cyan)';
+            }
+        }
+
+        updateUI();
+        setInterval(updateUI, 1000);
+    </script>
+</body>
+</html>
